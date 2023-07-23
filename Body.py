@@ -31,7 +31,6 @@ class Body(object):
         multiplier = [x * boxsize / oriImg.shape[0] for x in scale_search]
         heatmap_avg = np.zeros((oriImg.shape[0], oriImg.shape[1], 19))
         paf_avg = np.zeros((oriImg.shape[0], oriImg.shape[1], 38))
-
         for m in range(len(multiplier)):
             scale = multiplier[m]
             imageToTest = cv2.resize(oriImg, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)

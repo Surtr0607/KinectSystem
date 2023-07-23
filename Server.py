@@ -36,4 +36,4 @@ class Server:
 
 
 if __name__ == "__main__":
-    SystemServer().accept_client()
+    Server().accept_client()
