@@ -12,6 +12,8 @@ import _ctypes
 import sys
 import numpy as np
 import cv2
+
+import utils
 from Body import Body
 import utils as util
 import matplotlib.pyplot as plt
@@ -22,23 +24,38 @@ body_estimation = Body('./body_pose_model.pth')
 
 # 开始循环
 while True:
-    # fetch depth frame
-    # print(util.get_depth_at_rgb_point(kinect, 100, 100))
-    temp = util.color_2_depth_space(kinect, _ColorSpacePoint, kinect._depth_frame_data, show=True, return_aligned_image=True)
-    temp = cv2.cvtColor(temp, cv2.COLOR_BGRA2BGR)
-    candidate, subset = body_estimation(temp)
-    canvas1 = util.draw_bodypose(temp, candidate, subset)
-    cv2.imshow("temp", canvas1)
-
     depth_frame = kinect.get_last_depth_frame()
 
     # convert to depth image
     depth_image = np.reshape(depth_frame, (424, 512)).astype(np.uint8)
 
     depth_color_image = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
-
     # show depth image
     cv2.imshow('Kinect Depth Map', depth_color_image)
+
+    # fetch depth frame
+    # print(util.get_depth_at_rgb_point(kinect, 100, 100))
+    color2depth = util.color_2_depth_space(kinect, _ColorSpacePoint, kinect._depth_frame_data, show=False, return_aligned_image=True)
+    color2depth = cv2.cvtColor(color2depth, cv2.COLOR_BGRA2BGR)
+    candidate, subset = body_estimation(color2depth)
+    # draw the body
+    canvas1 = util.draw_bodypose(color2depth, candidate, subset)
+
+    if candidate.any():
+        temp = utils.pack_data(candidate, subset, depth_image)
+        print(temp)
+    cv2.imshow("temp", canvas1)
+
+
+
+
+
+
+
+
+
+
+
 
 
     # read RGB image for skeleton tracking
@@ -46,20 +63,12 @@ while True:
     # color_image = np.reshape(color_frame, (1080, 1920, 4)).astype(np.uint8)
     # new_image = cv2.cvtColor(color_image, cv2.COLOR_BGRA2BGR)
     # new_image = cv2.resize(new_image, (960, 540))
-
-
-
-
-
     # cv2.imshow("RGB image", new_image)
 
 
 
     # candidate, subset = body_estimation(new_image)
-    # print("candidate")
-    # print(candidate)
-    # print("subset")
-    # print(subset)
+
 
     # temp = []
     # if candidate.any():

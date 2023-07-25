@@ -45,7 +45,6 @@ while 1:
         print(candidate)
         serialized_data = pickle.dumps(candidate)
         sockobj.send(serialized_data)
-    time.sleep(3)
 
 
 
