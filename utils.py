@@ -106,10 +106,9 @@ def draw_bodypose(canvas, candidate, subset):
     # plt.imshow(canvas[:, :, [2, 1, 0]])
     return canvas
 
-def pack_data(candidate, subset, depth_image):
+def pack_data(candidate, subset, depth_image, timestamp):
     # The format of the packed array is like [index of data block, candidate, subset, timestamp]
     packed = [[0,0,0] for _ in range(18)]
-    timestamp = int(time.time())
     # The first of packed array is the index of point sequence
     for i in range(18):
         # 画点，根据subset每个人，index=-1说明点位没检测到

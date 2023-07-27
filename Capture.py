@@ -21,30 +21,38 @@ import matplotlib.pyplot as plt
 kinect = PyKinectRuntime(PyKinectV2.FrameSourceTypes_Depth | PyKinectV2.FrameSourceTypes_Color | PyKinectV2.FrameSourceTypes_Body)
 body_estimation = Body('./body_pose_model.pth')
 
-
+temp = [0, 0]
 # 开始循环
 while True:
+
+
+    # # convert it into colorful depth image
+    # depth_color_image = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
+
+    # # show depth image
+    # cv2.imshow('Kinect Depth Map', depth_color_image)
+
+    color2depth = util.color_2_depth_space(kinect, _ColorSpacePoint, kinect._depth_frame_data, show=False, return_aligned_image=True)
+    color2depth = cv2.cvtColor(color2depth, cv2.COLOR_BGRA2BGR)
+
+    color2depth = cv2.resize(color2depth, (128, 106))
+
+    candidate, subset = body_estimation(color2depth)
+
+
     depth_frame = kinect.get_last_depth_frame()
 
     # convert to depth image
     depth_image = np.reshape(depth_frame, (424, 512)).astype(np.uint8)
+    depth_image = cv2.resize(depth_image, (128, 106))
 
-    depth_color_image = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.05), cv2.COLORMAP_JET)
-    # show depth image
-    cv2.imshow('Kinect Depth Map', depth_color_image)
-
-    # fetch depth frame
-    # print(util.get_depth_at_rgb_point(kinect, 100, 100))
-    color2depth = util.color_2_depth_space(kinect, _ColorSpacePoint, kinect._depth_frame_data, show=False, return_aligned_image=True)
-    color2depth = cv2.cvtColor(color2depth, cv2.COLOR_BGRA2BGR)
-    candidate, subset = body_estimation(color2depth)
     # draw the body
-    canvas1 = util.draw_bodypose(color2depth, candidate, subset)
+    # canvas1 = util.draw_bodypose(color2depth, candidate, subset)
 
     if candidate.any():
-        temp = utils.pack_data(candidate, subset, depth_image)
+        temp = utils.pack_data(candidate, subset, depth_image, int(time.time()))
         print(temp)
-    cv2.imshow("temp", canvas1)
+    # cv2.imshow("temp", canvas1)
 
 
 
