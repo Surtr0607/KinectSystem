@@ -106,18 +106,19 @@ def draw_bodypose(canvas, candidate, subset):
     # plt.imshow(canvas[:, :, [2, 1, 0]])
     return canvas
 
-def pack_data(candidate, subset, depth_image, timestamp):
+def pack_data(candidate, subset, depth_image, timestamp, packed):
     # The format of the packed array is like [index of data block, candidate, subset, timestamp]
-    packed = [[0,0,0] for _ in range(18)]
+
     # The first of packed array is the index of point sequence
-    for i in range(18):
-        # 画点，根据subset每个人，index=-1说明点位没检测到
-        for n in range(len(subset)):
+    for n in range(len(subset)):
+        for i in range(18):
+            # 画点，根据subset每个人，index=-1说明点位没检测到
+
             index = int(subset[n][i])
             if index == -1:
                 continue
             x, y = candidate[index][0:2]
-            packed[i][0] = index
+            packed[i][0] = i
             z = depth_image[int(y)][int(x)]
             packed[i][1] = (x, y, z)
             packed[i][2] = timestamp
@@ -209,8 +210,11 @@ def color_2_depth_space(kinect, color_space_point, depth_frame_data, show=False,
     kinect._mapper.MapDepthFrameToColorSpace(ctypes.c_uint(512 * 424), depth_frame_data, kinect._depth_frame_data_capacity, depth2color_points)
     # depth_x = depth2color_points[color_point[0] * 1920 + color_point[0] - 1].x
     # depth_y = depth2color_points[color_point[0] * 1920 + color_point[0] - 1].y
-    colorXYs = np.copy(np.ctypeslib.as_array(depth2color_points, shape=(kinect.depth_frame_desc.Height * kinect.depth_frame_desc.Width,)))  # Convert ctype pointer to array
-    colorXYs = colorXYs.view(np.float32).reshape(colorXYs.shape + (-1,))  # Convert struct array to regular numpy array https://stackoverflow.com/questions/5957380/convert-structured-array-to-regular-numpy-array
+    # Convert ctype pointer to array
+    colorXYs = np.copy(np.ctypeslib.as_array(depth2color_points,
+                                             shape=(kinect.depth_frame_desc.Height * kinect.depth_frame_desc.Width,)))
+    # Convert struct array to regular numpy array https://stackoverflow.com/questions/5957380/convert-structured-array-to-regular-numpy-array
+    colorXYs = colorXYs.view(np.float32).reshape(colorXYs.shape + (-1,))
     colorXYs += 0.5
     colorXYs = colorXYs.reshape(kinect.depth_frame_desc.Height, kinect.depth_frame_desc.Width, 2).astype(int)
     colorXs = np.clip(colorXYs[:, :, 0], 0, kinect.color_frame_desc.Width - 1)
@@ -220,7 +224,6 @@ def color_2_depth_space(kinect, color_space_point, depth_frame_data, show=False,
         color_img = color_frame.reshape((kinect.color_frame_desc.Height, kinect.color_frame_desc.Width, 4)).astype(np.uint8)
         align_color_img = np.zeros((424, 512, 4), dtype=np.uint8)
         align_color_img[:, :] = color_img[colorYs, colorXs, :]
-
 
 
         if show:

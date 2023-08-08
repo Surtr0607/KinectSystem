@@ -7,6 +7,10 @@ from pykinect2 import PyKinectRuntime
 from pykinect2.PyKinectRuntime import *
 from PIL import Image
 
+from matplotlib import pyplot as plt
+from mpl_toolkits import mplot3d
+from matplotlib import animation
+
 import ctypes
 import _ctypes
 import sys
@@ -15,13 +19,19 @@ import cv2
 
 import utils
 from Body import Body
-import utils as util
-import matplotlib.pyplot as plt
+
+limbSeq = [[2, 3], [2, 6], [3, 4], [4, 5], [6, 7], [7, 8], [2, 9], [9, 10], \
+               [10, 11], [2, 12], [12, 13], [13, 14], [2, 1], [1, 15], [15, 17], \
+               [1, 16], [16, 18], [3, 17], [6, 18]]
 
 kinect = PyKinectRuntime(PyKinectV2.FrameSourceTypes_Depth | PyKinectV2.FrameSourceTypes_Color | PyKinectV2.FrameSourceTypes_Body)
 body_estimation = Body('./body_pose_model.pth')
 
 temp = [0, 0]
+packed = [[0, 0, 0] for _ in range(18)]
+
+
+fig = plt.figure()
 # 开始循环
 while True:
 
@@ -32,10 +42,10 @@ while True:
     # # show depth image
     # cv2.imshow('Kinect Depth Map', depth_color_image)
 
-    color2depth = util.color_2_depth_space(kinect, _ColorSpacePoint, kinect._depth_frame_data, show=False, return_aligned_image=True)
+    color2depth = utils.color_2_depth_space(kinect, _ColorSpacePoint, kinect._depth_frame_data, show=False, return_aligned_image=True)
     color2depth = cv2.cvtColor(color2depth, cv2.COLOR_BGRA2BGR)
 
-    color2depth = cv2.resize(color2depth, (128, 106))
+    color2depth = cv2.resize(color2depth, (512, 424))
 
     candidate, subset = body_estimation(color2depth)
 
@@ -44,15 +54,57 @@ while True:
 
     # convert to depth image
     depth_image = np.reshape(depth_frame, (424, 512)).astype(np.uint8)
-    depth_image = cv2.resize(depth_image, (128, 106))
+    # depth_image = cv2.resize(depth_image, (128, 106))
 
     # draw the body
-    # canvas1 = util.draw_bodypose(color2depth, candidate, subset)
 
+    canvas1 = utils.draw_bodypose(color2depth, candidate, subset)
+    cv2.imshow("temp", canvas1)
+    plt.ion()
     if candidate.any():
-        temp = utils.pack_data(candidate, subset, depth_image, int(time.time()))
+        temp = utils.pack_data(candidate, subset, depth_image, int(time.time()), packed)
         print(temp)
-    # cv2.imshow("temp", canvas1)
+
+        ax = plt.axes(projection='3d')
+        ax.set_xlim(0, 512)
+        ax.set_ylim(0, 424)
+        ax.set_zlim(0, 300)
+        for coordinate in temp:
+            if coordinate[1] != 0:
+                print(coordinate[1])
+                ax.scatter(coordinate[1][0], coordinate[1][1], coordinate[1][2])
+
+
+        # draw the line
+        for i in range(17):
+            for n in range(len(subset)):
+
+                index = subset[n][np.array(limbSeq[i]) - 1]
+                if -1 in index:
+                    continue
+                new = np.array(limbSeq[i]) - 1
+                first = int(new[0])
+                second = int(new[1])
+                ax.plot([packed[first][1][0], packed[second][1][0]],
+                        [packed[first][1][1], packed[second][1][1]],
+                        [packed[first][1][2], packed[second][1][2]],
+                        c='r')
+
+
+        plt.ioff()
+
+        plt.draw()
+
+
+        plt.pause(5)
+        # scatter.remove([(100,100,100)])
+
+        plt.delaxes(ax)
+
+
+
+
+
 
 
 
@@ -75,7 +127,6 @@ while True:
 
 
 
-    # candidate, subset = body_estimation(new_image)
 
 
     # temp = []
@@ -85,18 +136,6 @@ while True:
     #         temp.append([depth_image[(int(x), int(y))]])
     #     arr = np.append(candidate, temp, 1)
     #     print(arr)
-
-
-
-
-
-
-
-    # canvas1 = util.draw_bodypose(new_image, candidate, subset)
-    # cv2.imshow("skeleton tracking", canvas1)
-    # canvas2 = util.draw_bodypose_on_depth(kinect, depth_color_image, candidate, subset)
-    # cv2.imshow("another", canvas2)
-
 
     # 等待退出
     if cv2.waitKey(1) == 27:
